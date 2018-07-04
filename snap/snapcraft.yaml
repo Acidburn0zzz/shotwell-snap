@@ -1,5 +1,5 @@
 name: shotwell
-version: '0.29.2'
+version: '0.29.3'
 summary: Shotwell photo manager
 description: |
   Shotwell is a digital photo organizer designed for the GNOME desktop
@@ -14,7 +14,7 @@ slots:
   dbus-shotwell:
     interface: dbus
     bus: session
-    name: org.yorba.shotwell
+    name: org.gnome.Shotwell
 
 apps:
   shotwell:
@@ -24,19 +24,36 @@ apps:
       - x11
       - unity7
       - home
+      - wayland
       - network
       - mount-observe
       - gsettings
       - removable-media
 
+plugs:
+  gnome-3-26-1604:
+    interface: content
+    target: $SNAP/gnome-platform
+    default-provider: gnome-3-26-1604:gnome-3-26-1604
+
 parts:
+  gnome-platform:
+    plugin: nil
+    after: [desktop-gnome-platform]
+    override-build: |
+      echo "deb http://ppa.launchpad.net/ubuntu-desktop/gnome-3-26/ubuntu xenial main" | tee /etc/apt/sources.list.d/gnome-3-26.list
+      apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 399B698EEA9EF163B6F9A0F62CC98497A1231595
+      apt update
+      apt upgrade -yy
+    prime: [-*]
+
   gexiv:
     source: https://download.gnome.org/sources/gexiv2/0.10/gexiv2-0.10.8.tar.xz
     plugin: meson
-    # override-build: |
-    #   apt-get install -y python3-setuptools python3-pip
-    #   pip3 install meson
-    #   snapcraftctl build
+    override-build: |
+      apt-get install -y python3-setuptools python3-pip
+      pip3 install meson
+      snapcraftctl build
     after: [exiv]
   exiv:
     source: https://github.com/Exiv2/exiv2.git
@@ -49,10 +66,9 @@ parts:
       - libstdc++6
       - zlib1g
   shotwell:
-    source: https://github.com/GNOME/shotwell/archive/shotwell-0.29.2.tar.gz
+    source: https://github.com/GNOME/shotwell/archive/shotwell-0.29.3.tar.gz
     plugin: meson
-    meson-parameters:
-      - --prefix=/usr
+    meson-parameters: [--prefix=/usr]
     build-packages:
       - desktop-file-utils
       - gnome-doc-utils
@@ -116,4 +132,4 @@ parts:
     override-build: |
       sed -i 's|Icon=shotwell|Icon=${SNAP}/usr/share/icons/hicolor/256x256/apps/shotwell.png|g' misc/shotwell.desktop.in
       snapcraftctl build
-    after: [desktop-gtk3, gexiv]
+    after: [gnome-platform, gexiv]
